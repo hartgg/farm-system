@@ -27,30 +27,44 @@
     </form>
 </div>
 
+<h2>ค้นหาชื่อเกษตรกร</h2>
+<div class="card">
+    <form method="get" action="/">
+        <input type="text" name="search" placeholder="พิมพ์ชื่อเกษตรกร"
+               value="{{ search if search else '' }}">
+        <button type="submit">ค้นหา</button>
+    </form>
+</div>
+
 <h2>รายการแปลงปลูก</h2>
 
 <div class="card">
-    <table>
-        <tr>
-            <th>ชื่อเกษตรกร</th>
-            <th>สายพันธุ์</th>
-            <th>พื้นที่</th>
-            <th>ผลผลิต</th>
-            <th>รายได้</th>
-            <th>วันเก็บเกี่ยว</th>
-        </tr>
+<table>
+    <tr>
+        <th>ชื่อ</th>
+        <th>สายพันธุ์</th>
+        <th>พื้นที่</th>
+        <th>ผลผลิต</th>
+        <th>รายได้</th>
+        <th>วันเก็บเกี่ยว</th>
+        <th>จัดการ</th>
+    </tr>
 
-        {% for farm in farms %}
-        <tr>
-            <td>{{ farm.farmer_name }}</td>
-            <td>{{ farm.variety }}</td>
-            <td>{{ farm.area }}</td>
-            <td>{{ farm.expected_yield }}</td>
-            <td>{{ farm.expected_income }}</td>
-            <td>{{ farm.harvest_date }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+    {% for farm in farms %}
+    <tr>
+        <td>{{ farm.farmer_name }}</td>
+        <td>{{ farm.variety }}</td>
+        <td>{{ farm.area }}</td>
+        <td>{{ farm.expected_yield }}</td>
+        <td>{{ farm.expected_income }}</td>
+        <td>{{ farm.harvest_date }}</td>
+        <td>
+            <a href="/edit/{{ farm.id }}">✏ แก้ไข</a> |
+            <a href="/delete/{{ farm.id }}" onclick="return confirm('ลบข้อมูลนี้?')">🗑 ลบ</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
 </div>
 
 {% endblock %}

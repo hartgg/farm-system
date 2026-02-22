@@ -1,13 +1,35 @@
 {% extends "base.html" %}
+
 {% block content %}
 
 <h2>แก้ไขข้อมูล</h2>
 
-<form action="/update/{{ farm.id }}" method="post">
-    <input type="number" step="0.1" name="area" value="{{ farm.area }}" required>
-    <input type="number" step="0.1" name="price_per_ton" value="{{ farm.price_per_ton }}" required>
-    <input type="date" name="plant_date" value="{{ farm.plant_date }}" required>
-    <button type="submit">อัปเดต</button>
+<div class="card">
+<form method="post">
+
+    <input type="text" name="farmer_name"
+           value="{{ farm.farmer_name }}" required>
+
+    <select name="variety" required>
+        <option value="เบนิฮารุกะ" {% if farm.variety=="เบนิฮารุกะ" %}selected{% endif %}>เบนิฮารุกะ</option>
+        <option value="ซิลค์สวีท" {% if farm.variety=="ซิลค์สวีท" %}selected{% endif %}>ซิลค์สวีท</option>
+        <option value="อันโนะ อิโมะ" {% if farm.variety=="อันโนะ อิโมะ" %}selected{% endif %}>อันโนะ อิโมะ</option>
+        <option value="โอกินาว่าส้ม" {% if farm.variety=="โอกินาว่าส้ม" %}selected{% endif %}>โอกินาว่าส้ม</option>
+        <option value="โอกินาว่าม่วง" {% if farm.variety=="โอกินาว่าม่วง" %}selected{% endif %}>โอกินาว่าม่วง</option>
+    </select>
+
+    <input type="number" step="0.01" name="area"
+           value="{{ farm.area }}" required>
+
+    <input type="number" step="0.01" name="price_per_ton"
+           value="{{ farm.price_per_ton }}" required>
+
+    <input type="date" name="plant_date"
+           value="{{ farm.plant_date }}" required>
+
+    <button type="submit">บันทึกการแก้ไข</button>
+
 </form>
+</div>
 
 {% endblock %}
