@@ -1,9 +1,6 @@
 fastapi
 uvicorn
-sqlmodel
 jinja2
-python-multipart
+sqlalchemy
 psycopg2-binary
-pandas
-openpyxl
-postgresql://farm_system_db_user:2XDsJX0o4ihiPDIatqUi1kt31wVgplcx@dpg-d6dg9gktgctc73cdgb0g-a.oregon-postgres.render.com/farm_system_db
+python-multipart
