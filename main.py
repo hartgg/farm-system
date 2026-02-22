@@ -1,182 +1,139 @@
-import os
-from datetime import date, timedelta
-from typing import Optional
-
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-
-from sqlmodel import SQLModel, Field, Session, create_engine, select
-import pandas as pd
-import io
+from sqlalchemy import create_engine, Column, Integer, Float, Date
+from sqlalchemy.orm import sessionmaker, declarative_base
+from datetime import date, timedelta
+import os
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-# ================= DATABASE =================
-
 DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL not set")
 
-engine = create_engine(DATABASE_URL, echo=False)
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(bind=engine)
+Base = declarative_base()
 
+# ================= MODEL =================
+class Farm(Base):
+    __tablename__ = "farms"
 
-class Farm(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    farmer_name: str
-    phone: str
-    area_rai: float
-    plant_date: date
-    harvest_date: date
-    expected_yield: float
-    status: str = "กำลังปลูก"
+    id = Column(Integer, primary_key=True, index=True)
+    area = Column(Float)
+    price_per_ton = Column(Float)
+    expected_yield = Column(Float)
+    expected_income = Column(Float)
+    plant_date = Column(Date)
+    harvest_date = Column(Date)
 
+Base.metadata.create_all(bind=engine)
 
-def create_db():
-    SQLModel.metadata.create_all(engine)
-
-
-create_db()
-
-
-# ================= HELPER =================
-
-def calculate_status(harvest_date):
-    today = date.today()
-    if today < harvest_date:
-        return "กำลังปลูก"
-    elif today == harvest_date:
-        return "รอขุด"
-    else:
-        return "ขุดแล้ว"
-
-
-# ================= ROUTES =================
-
+# ================= HOME =================
 @app.get("/", response_class=HTMLResponse)
-def home(request: Request, search: Optional[str] = None):
-    with Session(engine) as session:
-        farms = session.exec(select(Farm)).all()
+def home(request: Request):
+    db = SessionLocal()
+    farms = db.query(Farm).all()
 
-    if search:
-        farms = [
-            f for f in farms
-            if search.lower() in f.farmer_name.lower()
-            or search in f.phone
-        ]
+    total_area = sum(f.area for f in farms) if farms else 0
+    total_income = sum(f.expected_income for f in farms) if farms else 0
 
-    # รวมผลผลิตรายเดือน
-    monthly = {}
-    for f in farms:
-        month = f.harvest_date.strftime("%Y-%m")
-        monthly[month] = monthly.get(month, 0) + f.expected_yield
+    db.close()
 
     return templates.TemplateResponse("index.html", {
         "request": request,
         "farms": farms,
-        "monthly": monthly
+        "total_area": total_area,
+        "total_income": total_income
     })
 
-
-@app.get("/add", response_class=HTMLResponse)
-def add_form(request: Request):
-    return templates.TemplateResponse("add.html", {"request": request})
-
-
+# ================= ADD =================
 @app.post("/add")
-def add_farm(
-    farmer_name: str = Form(...),
-    phone: str = Form(...),
-    area_rai: float = Form(...),
+def add(
+    area: float = Form(...),
+    price_per_ton: float = Form(...),
     plant_date: date = Form(...)
 ):
+    db = SessionLocal()
+
+    expected_yield = area * 1.5
+    expected_income = expected_yield * price_per_ton
     harvest_date = plant_date + timedelta(days=90)
-    expected_yield = area_rai * 1.5
-    status = calculate_status(harvest_date)
 
     farm = Farm(
-        farmer_name=farmer_name,
-        phone=phone,
-        area_rai=area_rai,
-        plant_date=plant_date,
-        harvest_date=harvest_date,
+        area=area,
+        price_per_ton=price_per_ton,
         expected_yield=expected_yield,
-        status=status
+        expected_income=expected_income,
+        plant_date=plant_date,
+        harvest_date=harvest_date
     )
 
-    with Session(engine) as session:
-        session.add(farm)
-        session.commit()
+    db.add(farm)
+    db.commit()
+    db.close()
 
     return RedirectResponse("/", status_code=303)
 
-
+# ================= DELETE =================
 @app.get("/delete/{farm_id}")
-def delete_farm(farm_id: int):
-    with Session(engine) as session:
-        farm = session.get(Farm, farm_id)
-        if farm:
-            session.delete(farm)
-            session.commit()
+def delete(farm_id: int):
+    db = SessionLocal()
+    farm = db.query(Farm).filter(Farm.id == farm_id).first()
+    if farm:
+        db.delete(farm)
+        db.commit()
+    db.close()
     return RedirectResponse("/", status_code=303)
 
-
+# ================= EDIT PAGE =================
 @app.get("/edit/{farm_id}", response_class=HTMLResponse)
-def edit_form(request: Request, farm_id: int):
-    with Session(engine) as session:
-        farm = session.get(Farm, farm_id)
-    return templates.TemplateResponse("edit.html", {
-        "request": request,
-        "farm": farm
-    })
+def edit_page(request: Request, farm_id: int):
+    db = SessionLocal()
+    farm = db.query(Farm).filter(Farm.id == farm_id).first()
+    db.close()
+    return templates.TemplateResponse("edit.html", {"request": request, "farm": farm})
 
-
-@app.post("/edit/{farm_id}")
-def edit_farm(
+# ================= UPDATE =================
+@app.post("/update/{farm_id}")
+def update(
     farm_id: int,
-    farmer_name: str = Form(...),
-    phone: str = Form(...),
-    area_rai: float = Form(...),
+    area: float = Form(...),
+    price_per_ton: float = Form(...),
     plant_date: date = Form(...)
 ):
-    with Session(engine) as session:
-        farm = session.get(Farm, farm_id)
-        farm.farmer_name = farmer_name
-        farm.phone = phone
-        farm.area_rai = area_rai
+    db = SessionLocal()
+    farm = db.query(Farm).filter(Farm.id == farm_id).first()
+
+    if farm:
+        farm.area = area
+        farm.price_per_ton = price_per_ton
+        farm.expected_yield = area * 1.5
+        farm.expected_income = farm.expected_yield * price_per_ton
         farm.plant_date = plant_date
         farm.harvest_date = plant_date + timedelta(days=90)
-        farm.expected_yield = area_rai * 1.5
-        farm.status = calculate_status(farm.harvest_date)
-        session.add(farm)
-        session.commit()
 
+        db.commit()
+
+    db.close()
     return RedirectResponse("/", status_code=303)
 
+# ================= DASHBOARD =================
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard(request: Request):
+    db = SessionLocal()
+    farms = db.query(Farm).all()
+    db.close()
 
-@app.get("/export")
-def export_excel():
-    with Session(engine) as session:
-        farms = session.exec(select(Farm)).all()
+    total_area = sum(f.area for f in farms) if farms else 0
+    total_yield = sum(f.expected_yield for f in farms) if farms else 0
+    total_income = sum(f.expected_income for f in farms) if farms else 0
 
-    data = [{
-        "ชื่อ": f.farmer_name,
-        "เบอร์": f.phone,
-        "พื้นที่ (ไร่)": f.area_rai,
-        "วันปลูก": f.plant_date,
-        "วันขุด": f.harvest_date,
-        "ผลผลิต (ตัน)": f.expected_yield,
-        "สถานะ": f.status
-    } for f in farms]
-
-    df = pd.DataFrame(data)
-    output = io.BytesIO()
-    df.to_excel(output, index=False)
-    output.seek(0)
-
-    return StreamingResponse(
-        output,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": "attachment; filename=farm_data.xlsx"
-        }
-    )
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "total_area": total_area,
+        "total_yield": total_yield,
+        "total_income": total_income
+    })
