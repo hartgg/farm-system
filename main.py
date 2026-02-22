@@ -1,68 +1,74 @@
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Request, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import create_engine, Column, Integer, Float, Date, String
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlmodel import SQLModel, Field, Session, create_engine, select
 from datetime import date, timedelta
-import os
+from typing import Optional
+
+DATABASE_URL = "postgresql://user:password@host:port/dbname"  # ใส่ของจริงใน Render
+
+engine = create_engine(DATABASE_URL, echo=True)
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(bind=engine)
-Base = declarative_base()
+# --------------------
+# MODEL
+# --------------------
+class Farm(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    farmer_name: str
+    variety: str
+    area: float
+    price_per_ton: float
+    expected_yield: float
+    expected_income: float
+    plant_date: date
+    harvest_date: date
 
-# ================= MODEL =================
-class Farm(Base):
-    __tablename__ = "farms"
 
-    id = Column(Integer, primary_key=True, index=True)
-    farmer_name = Column(String)
-    area = Column(Float)
-    price_per_ton = Column(Float)
-    expected_yield = Column(Float)
-    expected_income = Column(Float)
-    plant_date = Column(Date)
-    harvest_date = Column(Date)
+def get_session():
+    with Session(engine) as session:
+        yield session
 
-Base.metadata.create_all(bind=engine)
 
-# ================= HOME =================
+@app.on_event("startup")
+def on_startup():
+    SQLModel.metadata.create_all(engine)
+
+
+# --------------------
+# ROUTE แสดงหน้า
+# --------------------
 @app.get("/", response_class=HTMLResponse)
-def home(request: Request):
-    db = SessionLocal()
-    farms = db.query(Farm).all()
-
-    total_area = sum(f.area for f in farms)
-    total_income = sum(f.expected_income for f in farms)
-
-    db.close()
-
+def home(request: Request, session: Session = Depends(get_session)):
+    farms = session.exec(select(Farm)).all()
     return templates.TemplateResponse("index.html", {
         "request": request,
-        "farms": farms,
-        "total_area": total_area,
-        "total_income": total_income
+        "farms": farms
     })
 
-# ================= ADD =================
+
+# --------------------
+# ROUTE เพิ่มข้อมูล
+# --------------------
 @app.post("/add")
-def add(
+def add_farm(
     farmer_name: str = Form(...),
+    variety: str = Form(...),
     area: float = Form(...),
     price_per_ton: float = Form(...),
-    plant_date: date = Form(...)
+    plant_date: date = Form(...),
+    session: Session = Depends(get_session)
 ):
-    db = SessionLocal()
-
-    expected_yield = area * 1.5
+    expected_yield = area * 1.5        # สมมุติ 3 ตันต่อไร่
     expected_income = expected_yield * price_per_ton
     harvest_date = plant_date + timedelta(days=90)
 
     farm = Farm(
         farmer_name=farmer_name,
+        variety=variety,
         area=area,
         price_per_ton=price_per_ton,
         expected_yield=expected_yield,
@@ -71,36 +77,7 @@ def add(
         harvest_date=harvest_date
     )
 
-    db.add(farm)
-    db.commit()
-    db.close()
+    session.add(farm)
+    session.commit()
 
     return RedirectResponse("/", status_code=303)
-
-# ================= DASHBOARD =================
-@app.get("/dashboard", response_class=HTMLResponse)
-def dashboard(request: Request, month: int = None):
-    db = SessionLocal()
-    farms = db.query(Farm).all()
-
-    total_area = sum(f.area for f in farms)
-    total_yield = sum(f.expected_yield for f in farms)
-    total_income = sum(f.expected_income for f in farms)
-
-    # ===== คำนวณพื้นที่ที่จะขุดในเดือนที่เลือก =====
-    harvest_area_month = 0
-    if month:
-        harvest_area_month = sum(
-            f.area for f in farms if f.harvest_date.month == month
-        )
-
-    db.close()
-
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "total_area": total_area,
-        "total_yield": total_yield,
-        "total_income": total_income,
-        "harvest_area_month": harvest_area_month,
-        "selected_month": month
-    })
