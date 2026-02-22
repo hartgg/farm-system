@@ -2,7 +2,9 @@
 {% block content %}
 
 <h2>เพิ่มรอบปลูก</h2>
+
 <form action="/add" method="post">
+    <input type="text" name="farmer_name" placeholder="ชื่อเกษตรกร" required>
     <input type="number" step="0.1" name="area" placeholder="จำนวนไร่" required>
     <input type="number" step="0.1" name="price_per_ton" placeholder="ราคาต่อตัน" required>
     <input type="date" name="plant_date" required>
@@ -12,35 +14,30 @@
 <hr>
 
 <h2>ข้อมูลทั้งหมด</h2>
-<table border="1">
+
+<table>
 <tr>
-<th>ID</th>
+<th>ชื่อ</th>
 <th>พื้นที่</th>
 <th>ผลผลิต</th>
 <th>รายได้</th>
-<th>วันปลูก</th>
 <th>วันเก็บเกี่ยว</th>
-<th>จัดการ</th>
 </tr>
 
 {% for farm in farms %}
 <tr>
-<td>{{ farm.id }}</td>
+<td>{{ farm.farmer_name }}</td>
 <td>{{ farm.area }}</td>
 <td>{{ farm.expected_yield }}</td>
 <td>{{ farm.expected_income }}</td>
-<td>{{ farm.plant_date }}</td>
 <td>{{ farm.harvest_date }}</td>
-<td>
-<a href="/edit/{{ farm.id }}">แก้ไข</a> |
-<a href="/delete/{{ farm.id }}">ลบ</a>
-</td>
 </tr>
 {% endfor %}
 </table>
 
-<hr>
-<p>พื้นที่รวม: {{ total_area }}</p>
-<p>รายได้รวม: {{ total_income }}</p>
+<div class="card">
+พื้นที่รวม: {{ total_area }} ไร่<br>
+รายได้รวม: {{ total_income }} บาท
+</div>
 
 {% endblock %}

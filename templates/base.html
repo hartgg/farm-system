@@ -2,11 +2,24 @@
 <html>
 <head>
     <title>RAI-DAENG</title>
+    <style>
+        body { font-family: Arial; margin: 40px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 8px; }
+        th { background-color: #f2f2f2; }
+        button { padding: 6px 12px; }
+        input { padding: 5px; margin: 3px; }
+        .card { background: #f9f9f9; padding: 15px; margin: 10px 0; }
+    </style>
 </head>
 <body>
-    <a href="/">หน้าแรก</a> |
-    <a href="/dashboard">Dashboard</a>
-    <hr>
-    {% block content %}{% endblock %}
+
+<h1>🌱 Agri Pro</h1>
+<a href="/">หน้าแรก</a> |
+<a href="/dashboard">Dashboard</a>
+<hr>
+
+{% block content %}{% endblock %}
+
 </body>
 </html>

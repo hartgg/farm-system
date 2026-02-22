@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import create_engine, Column, Integer, Float, Date
+from sqlalchemy import create_engine, Column, Integer, Float, Date, String
 from sqlalchemy.orm import sessionmaker, declarative_base
 from datetime import date, timedelta
 import os
@@ -10,9 +10,6 @@ app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL not set")
-
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
@@ -22,6 +19,7 @@ class Farm(Base):
     __tablename__ = "farms"
 
     id = Column(Integer, primary_key=True, index=True)
+    farmer_name = Column(String)
     area = Column(Float)
     price_per_ton = Column(Float)
     expected_yield = Column(Float)
@@ -37,8 +35,8 @@ def home(request: Request):
     db = SessionLocal()
     farms = db.query(Farm).all()
 
-    total_area = sum(f.area for f in farms) if farms else 0
-    total_income = sum(f.expected_income for f in farms) if farms else 0
+    total_area = sum(f.area for f in farms)
+    total_income = sum(f.expected_income for f in farms)
 
     db.close()
 
@@ -52,6 +50,7 @@ def home(request: Request):
 # ================= ADD =================
 @app.post("/add")
 def add(
+    farmer_name: str = Form(...),
     area: float = Form(...),
     price_per_ton: float = Form(...),
     plant_date: date = Form(...)
@@ -63,6 +62,7 @@ def add(
     harvest_date = plant_date + timedelta(days=90)
 
     farm = Farm(
+        farmer_name=farmer_name,
         area=area,
         price_per_ton=price_per_ton,
         expected_yield=expected_yield,
@@ -77,63 +77,30 @@ def add(
 
     return RedirectResponse("/", status_code=303)
 
-# ================= DELETE =================
-@app.get("/delete/{farm_id}")
-def delete(farm_id: int):
-    db = SessionLocal()
-    farm = db.query(Farm).filter(Farm.id == farm_id).first()
-    if farm:
-        db.delete(farm)
-        db.commit()
-    db.close()
-    return RedirectResponse("/", status_code=303)
-
-# ================= EDIT PAGE =================
-@app.get("/edit/{farm_id}", response_class=HTMLResponse)
-def edit_page(request: Request, farm_id: int):
-    db = SessionLocal()
-    farm = db.query(Farm).filter(Farm.id == farm_id).first()
-    db.close()
-    return templates.TemplateResponse("edit.html", {"request": request, "farm": farm})
-
-# ================= UPDATE =================
-@app.post("/update/{farm_id}")
-def update(
-    farm_id: int,
-    area: float = Form(...),
-    price_per_ton: float = Form(...),
-    plant_date: date = Form(...)
-):
-    db = SessionLocal()
-    farm = db.query(Farm).filter(Farm.id == farm_id).first()
-
-    if farm:
-        farm.area = area
-        farm.price_per_ton = price_per_ton
-        farm.expected_yield = area * 1.5
-        farm.expected_income = farm.expected_yield * price_per_ton
-        farm.plant_date = plant_date
-        farm.harvest_date = plant_date + timedelta(days=90)
-
-        db.commit()
-
-    db.close()
-    return RedirectResponse("/", status_code=303)
-
 # ================= DASHBOARD =================
 @app.get("/dashboard", response_class=HTMLResponse)
-def dashboard(request: Request):
+def dashboard(request: Request, month: int = None):
     db = SessionLocal()
     farms = db.query(Farm).all()
-    db.close()
 
-    total_area = sum(f.area for f in farms) if farms else 0
-    total_yield = sum(f.expected_yield for f in farms) if farms else 0
-    total_income = sum(f.expected_income for f in farms) if farms else 0
+    total_area = sum(f.area for f in farms)
+    total_yield = sum(f.expected_yield for f in farms)
+    total_income = sum(f.expected_income for f in farms)
+
+    # ===== คำนวณพื้นที่ที่จะขุดในเดือนที่เลือก =====
+    harvest_area_month = 0
+    if month:
+        harvest_area_month = sum(
+            f.area for f in farms if f.harvest_date.month == month
+        )
+
+    db.close()
 
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "total_area": total_area,
         "total_yield": total_yield,
-        "total_income": total_income
+        "total_income": total_income,
+        "harvest_area_month": harvest_area_month,
+        "selected_month": month
     })
