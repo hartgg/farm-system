@@ -1,82 +1,21 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>ระบบจัดการ</title>
-    <style>
-        body {
-            font-family: Arial;
-            margin: 0;
-            background-color: #f4f6f9;
-        }
+{% extends "base.html" %}
 
-        .navbar {
-            background-color: #2c3e50;
-            color: white;
-            padding: 15px;
-            font-size: 18px;
-        }
+{% block content %}
 
-        .container {
-            padding: 20px;
-        }
+<h2>เพิ่มข้อมูลแปลงปลูก</h2>
 
-        form {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        input, select {
-            padding: 8px;
-            margin: 5px 0;
-            width: 100%;
-        }
-
-        button {
-            padding: 10px;
-            background-color: #27ae60;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #219150;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-        }
-
-        th, td {
-            padding: 10px;
-            border: 1px solid #ddd;
-        }
-
-        th {
-            background-color: #34495e;
-            color: white;
-        }
-    </style>
-</head>
-<body>
-<div class="container">
-
-    <h2>เพิ่มข้อมูลแปลงปลูก</h2>
-
+<div class="card">
     <form method="post" action="/add">
+
         <input type="text" name="farmer_name" placeholder="ชื่อเกษตรกร" required>
 
         <select name="variety" required>
             <option value="">เลือกสายพันธุ์</option>
-            <option value="เบนิฮารุกะ">เบนิฮารุกะ</option>
-            <option value="ซิลค์สวีท">ซิลค์สวีท</option>
-            <option value="อันโนะ">อันโนะ</option>
-            <option value="โอกินาว่าม่วง">โอกินาว่าม่วง</option>
-            <option value="โอกินาว่าส้ม">โอกินาว่าส้ม</option>
+            <option value="Atlantic">Atlantic</option>
+            <option value="Spunta">Spunta</option>
+            <option value="Granola">Granola</option>
+            <option value="Lady Rosetta">Lady Rosetta</option>
+            <option value="Kennebec">Kennebec</option>
         </select>
 
         <input type="number" step="0.01" name="area" placeholder="พื้นที่ (ไร่)" required>
@@ -84,17 +23,20 @@
         <input type="date" name="plant_date" required>
 
         <button type="submit">บันทึกข้อมูล</button>
+
     </form>
+</div>
 
-    <h2>รายการแปลงปลูก</h2>
+<h2>รายการแปลงปลูก</h2>
 
+<div class="card">
     <table>
         <tr>
             <th>ชื่อเกษตรกร</th>
             <th>สายพันธุ์</th>
-            <th>พื้นที่ (ไร่)</th>
-            <th>ผลผลิต (ตัน)</th>
-            <th>รายได้ (บาท)</th>
+            <th>พื้นที่</th>
+            <th>ผลผลิต</th>
+            <th>รายได้</th>
             <th>วันเก็บเกี่ยว</th>
         </tr>
 
@@ -109,8 +51,6 @@
         </tr>
         {% endfor %}
     </table>
-
 </div>
 
-</body>
-</html>
+{% endblock %}
