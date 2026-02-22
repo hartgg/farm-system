@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3>แก้ไขข้อมูลลูกสวน</h3>
+
+<form method="post">
+<div class="mb-3">
+<label>ชื่อ</label>
+<input type="text" name="farmer_name" value="{{farm.farmer_name}}" class="form-control" required>
+</div>
+
+<div class="mb-3">
+<label>เบอร์โทร</label>
+<input type="text" name="phone" value="{{farm.phone}}" class="form-control" required>
+</div>
+
+<div class="mb-3">
+<label>พื้นที่ (ไร่)</label>
+<input type="number" step="0.1" name="area_rai" value="{{farm.area_rai}}" class="form-control" required>
+</div>
+
+<div class="mb-3">
+<label>วันปลูก</label>
+<input type="date" name="plant_date" value="{{farm.plant_date}}" class="form-control" required>
+</div>
+
+<button class="btn btn-primary">อัปเดต</button>
+</form>
+
+{% endblock %}
