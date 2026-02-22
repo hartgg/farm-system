@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, Request, Form, Depends
+from fastapi import FastAPI, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import SQLModel, Field, Session, create_engine, select
@@ -7,7 +7,7 @@ from datetime import date, timedelta
 from typing import Optional
 
 # -------------------------
-# DATABASE (ดึงจาก Render)
+# DATABASE
 # -------------------------
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
@@ -61,6 +61,18 @@ def home(request: Request, session: Session = Depends(get_session)):
 
 
 # -------------------------
+# DASHBOARD PAGE
+# -------------------------
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard(request: Request, session: Session = Depends(get_session)):
+    farms = session.exec(select(Farm)).all()
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "farms": farms
+    })
+
+
+# -------------------------
 # ADD DATA
 # -------------------------
 @app.post("/add")
@@ -72,7 +84,7 @@ def add_farm(
     plant_date: date = Form(...),
     session: Session = Depends(get_session)
 ):
-    expected_yield = area * 3
+    expected_yield = area * 1.5
     expected_income = expected_yield * price_per_ton
     harvest_date = plant_date + timedelta(days=90)
 
@@ -90,4 +102,67 @@ def add_farm(
     session.add(farm)
     session.commit()
 
-    return RedirectResponse("/", status_code=303)
+    return RedirectResponse("/dashboard", status_code=303)
+
+
+# -------------------------
+# DELETE
+# -------------------------
+@app.get("/delete/{farm_id}")
+def delete_farm(farm_id: int, session: Session = Depends(get_session)):
+    farm = session.get(Farm, farm_id)
+    if not farm:
+        raise HTTPException(status_code=404, detail="Farm not found")
+
+    session.delete(farm)
+    session.commit()
+
+    return RedirectResponse("/dashboard", status_code=303)
+
+
+# -------------------------
+# EDIT PAGE
+# -------------------------
+@app.get("/edit/{farm_id}", response_class=HTMLResponse)
+def edit_page(farm_id: int, request: Request, session: Session = Depends(get_session)):
+    farm = session.get(Farm, farm_id)
+    if not farm:
+        raise HTTPException(status_code=404, detail="Farm not found")
+
+    return templates.TemplateResponse("edit.html", {
+        "request": request,
+        "farm": farm
+    })
+
+
+# -------------------------
+# UPDATE
+# -------------------------
+@app.post("/update/{farm_id}")
+def update_farm(
+    farm_id: int,
+    farmer_name: str = Form(...),
+    variety: str = Form(...),
+    area: float = Form(...),
+    price_per_ton: float = Form(...),
+    plant_date: date = Form(...),
+    session: Session = Depends(get_session)
+):
+    farm = session.get(Farm, farm_id)
+    if not farm:
+        raise HTTPException(status_code=404, detail="Farm not found")
+
+    farm.farmer_name = farmer_name
+    farm.variety = variety
+    farm.area = area
+    farm.price_per_ton = price_per_ton
+    farm.plant_date = plant_date
+
+    farm.expected_yield = area * 3
+    farm.expected_income = farm.expected_yield * price_per_ton
+    farm.harvest_date = plant_date + timedelta(days=90)
+
+    session.add(farm)
+    session.commit()
+
+    return RedirectResponse("/dashboard", status_code=303)
