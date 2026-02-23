@@ -48,7 +48,6 @@
         @media (max-width: 480px) {
             .navbar {
                 padding: 10px 12px;
-                display: flex;
             }
 
             .navbar .brand {
@@ -122,14 +121,22 @@
         @media (max-width: 768px) {
 
             .navbar {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
+                flex-direction: row;          /* ให้เรียงแนวนอนเหมือนเดิม */
+                justify-content: space-between;
+                align-items: center;
             }
 
             .navbar .menu {
-                width: 100%;
-                justify-content: flex-start;
+                margin-left: auto;            /* ดันเมนูไปชิดขวา */
+                justify-content: flex-end;
+            }
+
+            .navbar .brand {
+                font-size: 14px;
+            }
+
+            .navbar a {
+                font-size: 13px;
             }
 
             h2, h3 {
@@ -143,7 +150,6 @@
             table {
                 font-size: 13px;
             }
-
         }
     </style>
 </head>
