@@ -14,34 +14,49 @@
         /* ===== NAVBAR ===== */
         .navbar {
             background-color: #c62400;
-            padding: 15px 20px;
+            padding: 12px 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             color: white;
-            flex-wrap: wrap;
         }
 
         .navbar .brand {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
+            white-space: nowrap;
         }
 
         .navbar .menu {
             display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
         }
 
         .navbar a {
             color: white;
             text-decoration: none;
-            font-weight: 500;
             font-size: 14px;
+            white-space: nowrap;
         }
 
         .navbar a:hover {
             text-decoration: underline;
+        }
+
+        /* มือถือ */
+        @media (max-width: 480px) {
+            .navbar {
+                padding: 10px 12px;
+            }
+
+            .navbar .brand {
+                font-size: 14px;
+            }
+
+            .navbar a {
+                font-size: 13px;
+            }
         }
 
         /* ===== CONTAINER ===== */
