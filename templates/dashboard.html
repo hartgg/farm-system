@@ -73,10 +73,17 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-const incomeData = {{ variety_income | tojson }};
-const yieldData = {{ variety_yield | tojson }};
+const incomeData = {{ variety_income | default({}) | tojson }};
+const yieldData = {{ variety_yield | default({}) | tojson }};
 
-const labels = Object.keys(incomeData);
+// รวม key ทั้งหมดจาก 2 dict
+const labels = [...new Set([
+    ...Object.keys(incomeData),
+    ...Object.keys(yieldData)
+])];
+
+const incomeValues = labels.map(label => incomeData[label] || 0);
+const yieldValues = labels.map(label => yieldData[label] || 0);
 
 const ctx = document.getElementById('incomeChart');
 
@@ -87,11 +94,11 @@ new Chart(ctx, {
         datasets: [
             {
                 label: 'รายได้ (บาท)',
-                data: Object.values(incomeData)
+                data: incomeValues
             },
             {
                 label: 'ปริมาณ (ตัน)',
-                data: Object.values(yieldData)
+                data: yieldValues
             }
         ]
     }
