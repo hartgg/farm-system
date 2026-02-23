@@ -67,16 +67,16 @@
 </table>
 </div>
 
-<h3>กราฟรายได้แยกตามสายพันธุ์</h3>
+<h3>กราฟแยกตามสายพันธุ์ (รายได้ + ปริมาณตัน)</h3>
 <canvas id="incomeChart"></canvas>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-const data = {{ variety_summary | tojson }};
+const incomeData = {{ variety_income | tojson }};
+const yieldData = {{ variety_yield | tojson }};
 
-const labels = Object.keys(data);
-const values = Object.values(data);
+const labels = Object.keys(incomeData);
 
 const ctx = document.getElementById('incomeChart');
 
@@ -84,10 +84,16 @@ new Chart(ctx, {
     type: 'bar',
     data: {
         labels: labels,
-        datasets: [{
-            label: 'รายได้ (บาท)',
-            data: values
-        }]
+        datasets: [
+            {
+                label: 'รายได้ (บาท)',
+                data: Object.values(incomeData)
+            },
+            {
+                label: 'ปริมาณ (ตัน)',
+                data: Object.values(yieldData)
+            }
+        ]
     }
 });
 </script>

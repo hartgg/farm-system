@@ -189,6 +189,9 @@ def dashboard(
     harvest_income_month = 0
     variety_summary = {}
 
+    variety_income = {}
+    variety_yield = {}
+
     if month and year:
         harvest_farms = [
             f for f in farms
@@ -198,21 +201,28 @@ def dashboard(
         harvest_area_month = sum(f.area for f in harvest_farms)
         harvest_income_month = sum(f.expected_income for f in harvest_farms)
 
-        # ✅ รวมรายได้แยกตามสายพันธุ์
+        # ✅ รวมรายได้ + ตัน แยกตามสายพันธุ์
         for f in harvest_farms:
-            if f.variety not in variety_summary:
-                variety_summary[f.variety] = 0
-            variety_summary[f.variety] += f.expected_income
+            # รายได้
+            if f.variety not in variety_income:
+                variety_income[f.variety] = 0
+            variety_income[f.variety] += f.expected_income
+
+            # ปริมาณตัน
+            if f.variety not in variety_yield:
+                variety_yield[f.variety] = 0
+            variety_yield[f.variety] += f.expected_yield
 
     return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "total_area": total_area,
-        "total_yield": total_yield,
-        "total_income": total_income,
-        "selected_month": selected_month,
-        "selected_year": selected_year,
-        "harvest_farms": harvest_farms,
-        "harvest_area_month": harvest_area_month,
-        "harvest_income_month": harvest_income_month,
-        "variety_summary": variety_summary
+    "request": request,
+    "total_area": total_area,
+    "total_yield": total_yield,
+    "total_income": total_income,
+    "selected_month": selected_month,
+    "selected_year": selected_year,
+    "harvest_farms": harvest_farms,
+    "harvest_area_month": harvest_area_month,
+    "harvest_income_month": harvest_income_month,
+    "variety_income": variety_income,
+    "variety_yield": variety_yield
     })
