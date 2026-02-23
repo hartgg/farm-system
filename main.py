@@ -164,3 +164,55 @@ def delete_farm(farm_id: int, session: Session = Depends(get_session)):
     session.commit()
 
     return RedirectResponse("/", status_code=303)
+
+# ======================
+# DASHBOARD
+# ======================
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard(
+    request: Request,
+    month: int = Query(None),
+    year: int = Query(None),
+    session: Session = Depends(get_session)
+):
+    farms = session.exec(select(Farm)).all()
+
+    total_area = sum(f.area for f in farms)
+    total_yield = sum(f.expected_yield for f in farms)
+    total_income = sum(f.expected_income for f in farms)
+
+    selected_month = month
+    selected_year = year
+
+    harvest_farms = []
+    harvest_area_month = 0
+    harvest_income_month = 0
+    variety_summary = {}
+
+    if month and year:
+        harvest_farms = [
+            f for f in farms
+            if f.harvest_date.month == month and f.harvest_date.year == year
+        ]
+
+        harvest_area_month = sum(f.area for f in harvest_farms)
+        harvest_income_month = sum(f.expected_income for f in harvest_farms)
+
+        # ✅ รวมรายได้แยกตามสายพันธุ์
+        for f in harvest_farms:
+            if f.variety not in variety_summary:
+                variety_summary[f.variety] = 0
+            variety_summary[f.variety] += f.expected_income
+
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "total_area": total_area,
+        "total_yield": total_yield,
+        "total_income": total_income,
+        "selected_month": selected_month,
+        "selected_year": selected_year,
+        "harvest_farms": harvest_farms,
+        "harvest_area_month": harvest_area_month,
+        "harvest_income_month": harvest_income_month,
+        "variety_summary": variety_summary
+    })

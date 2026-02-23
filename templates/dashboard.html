@@ -9,38 +9,89 @@
 รายได้รวม: {{ total_income }} บาท
 </div>
 
-<h3>ดูพื้นที่ที่จะขุดตามเดือน</h3>
+<h3>เลือกเดือนและปีเพื่อดูพื้นที่ขุด</h3>
+
 <form method="get">
 <select name="month">
+<option value="">เลือกเดือน</option>
 {% for i in range(1,13) %}
-<option value="{{ i }}" {% if selected_month == i %}selected{% endif %}>เดือน {{ i }}</option>
+<option value="{{ i }}" 
+{% if selected_month == i %}selected{% endif %}>
+เดือน {{ i }}
+</option>
 {% endfor %}
 </select>
+
+<select name="year">
+<option value="">เลือกปี</option>
+{% for y in range(2023, 2031) %}
+<option value="{{ y }}"
+{% if selected_year == y %}selected{% endif %}>
+{{ y }}
+</option>
+{% endfor %}
+</select>
+
 <button type="submit">ดูข้อมูล</button>
 </form>
 
-{% if selected_month %}
-<div class="card">
-เดือน {{ selected_month }} จะมีพื้นที่ขุดรวม {{ harvest_area_month }} ไร่
-</div>
-{% endif %}
+{% if selected_month and selected_year %}
 
-<h3>กราฟรายได้รวม</h3>
+<div class="card">
+<h3>สรุปเดือน {{ selected_month }}/{{ selected_year }}</h3>
+พื้นที่ขุดรวม: {{ harvest_area_month }} ไร่<br>
+รายได้รวม: {{ harvest_income_month }} บาท
+</div>
+
+<h3>รายชื่อเกษตรกรที่จะขุด</h3>
+<div class="card">
+<table>
+<tr>
+<th>ชื่อเกษตรกร</th>
+<th>สายพันธุ์</th>
+<th>พื้นที่</th>
+<th>รายได้</th>
+<th>วันขุด</th>
+</tr>
+
+{% for farm in harvest_farms %}
+<tr>
+<td>{{ farm.farmer_name }}</td>
+<td>{{ farm.variety }}</td>
+<td>{{ farm.area }}</td>
+<td>{{ farm.expected_income }}</td>
+<td>{{ farm.harvest_date }}</td>
+</tr>
+{% endfor %}
+
+</table>
+</div>
+
+<h3>กราฟรายได้แยกตามสายพันธุ์</h3>
 <canvas id="incomeChart"></canvas>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
+const data = {{ variety_summary | tojson }};
+
+const labels = Object.keys(data);
+const values = Object.values(data);
+
 const ctx = document.getElementById('incomeChart');
+
 new Chart(ctx, {
     type: 'bar',
     data: {
-        labels: ['รายได้รวม'],
+        labels: labels,
         datasets: [{
-            label: 'บาท',
-            data: [{{ total_income }}]
+            label: 'รายได้ (บาท)',
+            data: values
         }]
     }
 });
 </script>
+
+{% endif %}
 
 {% endblock %}
