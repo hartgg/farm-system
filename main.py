@@ -172,7 +172,6 @@ def update_farm(
 # ======================
 # ค้นหาตามชื่อ
 # ======================
-@app.get("/", response_class=HTMLResponse)
 def home(
     request: Request,
     search: str = Query(None),
