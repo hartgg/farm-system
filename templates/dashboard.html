@@ -73,35 +73,70 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-const incomeData = {{ variety_income | default({}) | tojson }};
-const yieldData = {{ variety_yield | default({}) | tojson }};
+document.addEventListener("DOMContentLoaded", function () {
 
-// รวม key ทั้งหมดจาก 2 dict
-const labels = [...new Set([
-    ...Object.keys(incomeData),
-    ...Object.keys(yieldData)
-])];
+    const incomeData = {{ variety_income | default({}) | tojson }};
+    const yieldData = {{ variety_yield | default({}) | tojson }};
 
-const incomeValues = labels.map(label => incomeData[label] || 0);
-const yieldValues = labels.map(label => yieldData[label] || 0);
+    const labels = [...new Set([
+        ...Object.keys(incomeData),
+        ...Object.keys(yieldData)
+    ])];
 
-const ctx = document.getElementById('incomeChart');
-
-new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: labels,
-        datasets: [
-            {
-                label: 'รายได้ (บาท)',
-                data: incomeValues
-            },
-            {
-                label: 'ปริมาณ (ตัน)',
-                data: yieldValues
-            }
-        ]
+    if (labels.length === 0) {
+        document.getElementById("incomeChart").outerHTML =
+            "<p>ไม่มีข้อมูลในเดือนนี้</p>";
+        return;
     }
+
+    const incomeValues = labels.map(label => incomeData[label] || 0);
+    const yieldValues = labels.map(label => yieldData[label] || 0);
+
+    const ctx = document.getElementById('incomeChart');
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'รายได้ (บาท)',
+                    data: incomeValues,
+                    yAxisID: 'yIncome'
+                },
+                {
+                    label: 'ปริมาณ (ตัน)',
+                    data: yieldValues,
+                    yAxisID: 'yYield'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                yIncome: {
+                    type: 'linear',
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'บาท'
+                    }
+                },
+                yYield: {
+                    type: 'linear',
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'ตัน'
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                }
+            }
+        }
+    });
+
 });
 </script>
 
